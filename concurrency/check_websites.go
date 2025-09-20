@@ -1,6 +1,7 @@
 package concurrency
 
 type WebsiteChecker func(string) bool
+
 type result struct {
 	string
 	bool
