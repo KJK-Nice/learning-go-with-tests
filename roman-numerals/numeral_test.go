@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"testing"
 	"testing/quick"
 )
 
 var cases = []struct {
-	Arabic int
+	Arabic uint16
 	Roman  string
 }{
 	{1, "I"},
@@ -43,15 +42,22 @@ var cases = []struct {
 	{1995, "MCMXCV"},
 }
 
-func TestRomanNumrals(t *testing.T) {
+func TestConvertingToRomanNumrals(t *testing.T) {
 	for _, test := range cases {
 		t.Run(fmt.Sprintf("%d get converted to %q", test.Arabic, test.Roman), func(t *testing.T) {
-			got := ConvertToRoman(test.Arabic)
+			got, _ := ConvertToRoman(test.Arabic)
 			if got != test.Roman {
 				t.Errorf("got %q, want %q", got, test.Roman)
 			}
 		})
 	}
+
+	t.Run("it should not accept value greater than 3999", func(t *testing.T) {
+		_, err := ConvertToRoman(4000)
+		if err != ErrCanNotRepresentNumber {
+			t.Errorf("expect the got an error")
+		}
+	})
 }
 
 func TestConvertingToArabic(t *testing.T) {
@@ -66,17 +72,19 @@ func TestConvertingToArabic(t *testing.T) {
 }
 
 func TestPropertiesOfConversion(t *testing.T) {
-	assertion := func(arabic int) bool {
-		if arabic < 0 || arabic > 3999 {
-			log.Println(arabic)
+	assertion := func(arabic uint16) bool {
+		if arabic > 3999 {
 			return true
 		}
-		roman := ConvertToRoman(arabic)
+		t.Log("testing", arabic)
+		roman, _ := ConvertToRoman(arabic)
 		fromRoman := ConvertToArabic(roman)
 		return fromRoman == arabic
 	}
 
-	if err := quick.Check(assertion, nil); err != nil {
+	if err := quick.Check(assertion, &quick.Config{
+		MaxCount: 1000,
+	}); err != nil {
 		t.Error("faiil checks", err)
 	}
 }
