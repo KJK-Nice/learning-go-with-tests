@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	cf "learning-go-with-tests/maths"
+	cf "github.com/KJK-Nice/learning-go-with-tests/maths"
 )
 
 const (

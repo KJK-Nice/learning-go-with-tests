@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	. "learning-go-with-tests/maths/svg"
+	. "github.com/KJK-Nice/learning-go-with-tests/maths/svg"
 )
 
 type SVG struct {

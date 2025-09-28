@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"learning-go-with-tests/maths/svg"
+	"github.com/KJK-Nice/learning-go-with-tests/maths/svg"
 )
 
 func main() {
