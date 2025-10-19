@@ -128,7 +128,7 @@ func newLeagueRequest() *http.Request {
 	return req
 }
 
-func getLeagueFromResponse(t testing.TB, body io.Reader) (league []Player) {
+func getLeagueFromResponse(t testing.TB, body io.Reader) (league League) {
 	t.Helper()
 	league, err := NewLeague(body)
 
@@ -139,7 +139,7 @@ func getLeagueFromResponse(t testing.TB, body io.Reader) (league []Player) {
 	return league
 }
 
-func assertLeague(t testing.TB, got, want []Player) {
+func assertLeague(t testing.TB, got, want League) {
 	t.Helper()
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v want %v", got, want)
