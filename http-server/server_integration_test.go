@@ -10,7 +10,7 @@ import (
 
 func TestRecordingWinsAndRetrievingThem(t *testing.T) {
 	store := NewInMemoryPlayerStore()
-	server := NewPlayerServer(store)
+	server := mustMakePlayerServer(t, store)
 	player := "Pepper"
 
 	t.Run("it run record win correctly", func(t *testing.T) {
@@ -57,7 +57,10 @@ func TestRecordingWinsAndRetrivingThem(t *testing.T) {
 		log.Fatalf("problem creating file system player store, %v ", err)
 	}
 
-	server := NewPlayerServer(store)
+	server, err := NewPlayerServer(store)
+	if err != nil {
+		t.Fatalf("could not construct player server: %v", err)
+	}
 	player := "Pepper"
 
 	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
