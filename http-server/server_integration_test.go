@@ -1,4 +1,4 @@
-package poker
+package poker_test
 
 import (
 	"log"
@@ -6,11 +6,13 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+
+	poker "github.com/KJK-Nice/learning-go-with-tests/http-server"
 )
 
 func TestRecordingWinsAndRetrievingThem(t *testing.T) {
-	store := NewInMemoryPlayerStore()
-	server := mustMakePlayerServer(t, store)
+	store := poker.NewInMemoryPlayerStore()
+	server := mustMakePlayerServer(t, store, dummyGame)
 	player := "Pepper"
 
 	t.Run("it run record win correctly", func(t *testing.T) {
@@ -52,15 +54,12 @@ func TestRecordingWinsAndRetrievingThem(t *testing.T) {
 func TestRecordingWinsAndRetrivingThem(t *testing.T) {
 	database, cleanDatabase := createTempFile(t, `[]`)
 	defer cleanDatabase()
-	store, err := NewFileSystemPlayerStore(database)
+	store, err := poker.NewFileSystemPlayerStore(database)
 	if err != nil {
 		log.Fatalf("problem creating file system player store, %v ", err)
 	}
 
-	server, err := NewPlayerServer(store)
-	if err != nil {
-		t.Fatalf("could not construct player server: %v", err)
-	}
+	server := mustMakePlayerServer(t, store, dummyGame)
 	player := "Pepper"
 
 	server.ServeHTTP(httptest.NewRecorder(), newPostWinRequest(player))
@@ -81,7 +80,7 @@ func TestRecordingWinsAndRetrivingThem(t *testing.T) {
 		assertStatus(t, response, http.StatusOK)
 
 		got := getLeagueFromResponse(t, response.Body)
-		want := []Player{
+		want := []poker.Player{
 			{"Pepper", 3},
 		}
 		assertLeague(t, got, want)

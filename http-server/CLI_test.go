@@ -3,6 +3,7 @@ package poker_test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -23,7 +24,7 @@ type SpyBlindAlerter struct {
 	alerts []scheduledAlert
 }
 
-func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int) {
+func (s *SpyBlindAlerter) ScheduleAlertAt(at time.Duration, amount int, to io.Writer) {
 	s.alerts = append(s.alerts, scheduledAlert{at, amount})
 }
 
@@ -33,7 +34,7 @@ type GameSpy struct {
 	StartCalled  bool
 }
 
-func (g *GameSpy) Start(numberOfPlayers int) {
+func (g *GameSpy) Start(numberOfPlayers int, alertDestination io.Writer) {
 	g.StartedWith = numberOfPlayers
 	g.StartCalled = true
 }
@@ -51,43 +52,40 @@ func TestCLI(t *testing.T) {
 
 	t.Run("start game with 3 players and finish game with 'Chris' as winner", func(t *testing.T) {
 		game := &GameSpy{}
-		stdout := &bytes.Buffer{}
 
+		out := &bytes.Buffer{}
 		in := userSends("3", "Chris wins")
-		cli := poker.NewCLI(in, stdout, game)
 
-		cli.PlayPoker()
+		poker.NewCLI(in, out, game).PlayPoker()
 
-		assertMessagesSentToUser(t, stdout, poker.PlayerPrompt)
+		assertMessagesSentToUser(t, out, poker.PlayerPrompt)
 		assertGameStartedWith(t, game, 3)
 		assertFinishCalledWith(t, game, "Chris")
 	})
 
 	t.Run("start game with 7 players and finish game with 'Cleo' as winner", func(t *testing.T) {
 		game := &GameSpy{}
-		stdout := &bytes.Buffer{}
 
+		out := &bytes.Buffer{}
 		in := userSends("7", "Cleo wins")
-		cli := poker.NewCLI(in, stdout, game)
 
-		cli.PlayPoker()
+		poker.NewCLI(in, out, game).PlayPoker()
 
-		assertMessagesSentToUser(t, stdout, poker.PlayerPrompt)
+		assertMessagesSentToUser(t, out, poker.PlayerPrompt)
 		assertGameStartedWith(t, game, 7)
 		assertFinishCalledWith(t, game, "Cleo")
 	})
 
 	t.Run("it prints an error when a non numeric value is entered and does not start the game", func(t *testing.T) {
 		game := &GameSpy{}
-		stdout := &bytes.Buffer{}
 
+		out := &bytes.Buffer{}
 		in := userSends("Pies")
 
-		cli := poker.NewCLI(in, stdout, game)
-		cli.PlayPoker()
+		poker.NewCLI(in, out, game).PlayPoker()
 
 		assertGameNotStarted(t, game)
-		assertMessagesSentToUser(t, stdout, poker.PlayerPrompt, poker.BadPlayerInputErrMsg)
+		assertMessagesSentToUser(t, out, poker.PlayerPrompt, poker.BadPlayerInputErrMsg)
 	})
 
 }
@@ -97,7 +95,7 @@ func TestGame_Start(t *testing.T) {
 		blindAlerter := &SpyBlindAlerter{}
 		game := poker.NewTexasHoldem(blindAlerter, dummyPlayerStore)
 
-		game.Start(5)
+		game.Start(5, io.Discard)
 
 		cases := []scheduledAlert{
 			{0 * time.Second, 100},
@@ -120,7 +118,7 @@ func TestGame_Start(t *testing.T) {
 		blindAlerter := &SpyBlindAlerter{}
 		game := poker.NewTexasHoldem(blindAlerter, dummyPlayerStore)
 
-		game.Start(7)
+		game.Start(7, io.Discard)
 
 		cases := []scheduledAlert{
 			{0 * time.Second, 100},

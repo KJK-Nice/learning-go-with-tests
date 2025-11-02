@@ -3,7 +3,9 @@ package poker
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -28,6 +30,7 @@ type PlayerServer struct {
 	store PlayerStore
 	http.Handler
 	template *template.Template
+	game     Game
 }
 
 const htmlTemplatePath = "game.html"
@@ -35,7 +38,7 @@ const htmlTemplatePath = "game.html"
 const jsonContentType = "application/json"
 
 // NewPlayerServer creates a PlayerServer with routing configured
-func NewPlayerServer(store PlayerStore) (*PlayerServer, error) {
+func NewPlayerServer(store PlayerStore, game Game) (*PlayerServer, error) {
 	p := new(PlayerServer)
 
 	tmpl, err := template.ParseFiles("game.html")
@@ -44,13 +47,14 @@ func NewPlayerServer(store PlayerStore) (*PlayerServer, error) {
 		return nil, fmt.Errorf("problem opening %s %v", htmlTemplatePath, err)
 	}
 
+	p.game = game
 	p.template = tmpl
 	p.store = store
 
 	router := http.NewServeMux()
 	router.Handle("/players/", http.HandlerFunc(p.playerHandler))
 	router.Handle("/league", http.HandlerFunc(p.leagueHandler))
-	router.Handle("/game", http.HandlerFunc(p.game))
+	router.Handle("/game", http.HandlerFunc(p.playGame))
 	router.Handle("/ws", http.HandlerFunc(p.webSocket))
 
 	p.Handler = router
@@ -65,11 +69,16 @@ var wsUpgrader = websocket.Upgrader{
 
 func (p *PlayerServer) webSocket(w http.ResponseWriter, r *http.Request) {
 	conn, _ := wsUpgrader.Upgrade(w, r, nil)
-	_, winnerMsg, _ := conn.ReadMessage()
-	p.store.RecordWin(string(winnerMsg))
+
+	_, numberOfPlayersMsg, _ := conn.ReadMessage()
+	numberOfPlayers, _ := strconv.Atoi(string(numberOfPlayersMsg))
+	p.game.Start(numberOfPlayers, io.Discard) //todo: Dont' discard the blinds messages!
+
+	_, winner, _ := conn.ReadMessage()
+	p.game.Finish(string(winner))
 }
 
-func (p *PlayerServer) game(w http.ResponseWriter, r *http.Request) {
+func (p *PlayerServer) playGame(w http.ResponseWriter, r *http.Request) {
 	p.template.Execute(w, nil)
 }
 

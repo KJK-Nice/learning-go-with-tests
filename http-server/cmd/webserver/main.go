@@ -15,7 +15,9 @@ func main() {
 	}
 	defer close()
 
-	server, err := poker.NewPlayerServer(store)
+	game := poker.NewTexasHoldem(poker.BlindAlerterFunc(poker.Alerter), store)
+
+	server, err := poker.NewPlayerServer(store, game)
 	if err != nil {
 		log.Fatal("problem creating player server", err)
 	}
